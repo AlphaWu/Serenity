@@ -65,7 +65,7 @@
 
                     this.mouseTrap.bind(x.hotkey, function (e: BaseJQueryEventObject, action: any) {
                         if (btn.is(':visible')) {
-                            btn.triggerHandler('click');
+                            btn.click();
                         }
                         return x.hotkeyAllowDefault;
                     });
@@ -131,19 +131,19 @@
             var result: JSX.Element[] = [];
             for (var btn of buttons) {
                 if (btn.separator)
-                    result.push(<div className="separator" />);
+                    result.push(<div className="separator" key={result.length} />);
 
-                result.push(this.renderButton(btn));
+                result.push(this.renderButton(btn, result.length));
             }
 
             var key = 0;
             return <>{result.map(x => { x.key = ++key; return x; })}</>;
         }
 
-        renderButton(btn: ToolButton) {
+        renderButton(btn: ToolButton, key?: any) {
             return (
                 <div className={this.buttonClass(btn)} title={btn.hint}
-                    onClick={(e) => this.buttonClick(e, btn)}>
+                    onClick={(e) => this.buttonClick(e, btn)} key={key}>
                     <div className="button-outer">
                         {this.renderButtonText(btn)}
                     </div>

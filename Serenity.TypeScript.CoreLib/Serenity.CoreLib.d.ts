@@ -2258,7 +2258,7 @@ declare namespace Serenity {
             children?: React.ReactNode;
         }): JSX.Element;
         renderButtons(buttons: ToolButton[]): JSX.Element;
-        renderButton(btn: ToolButton): JSX.Element;
+        renderButton(btn: ToolButton, key?: any): JSX.Element;
         renderButtonText(btn: ToolButton): JSX.Element;
     }
 }

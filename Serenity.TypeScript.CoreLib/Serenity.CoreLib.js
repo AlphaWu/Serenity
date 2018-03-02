@@ -10469,7 +10469,7 @@ var Serenity;
                         .filter("." + x.cssClass);
                     _this.mouseTrap.bind(x.hotkey, function (e, action) {
                         if (btn.is(':visible')) {
-                            btn.triggerHandler('click');
+                            btn.click();
                         }
                         return x.hotkeyAllowDefault;
                     });
@@ -10519,15 +10519,15 @@ var Serenity;
             for (var _i = 0, buttons_1 = buttons; _i < buttons_1.length; _i++) {
                 var btn = buttons_1[_i];
                 if (btn.separator)
-                    result.push(React.createElement("div", { className: "separator" }));
-                result.push(this.renderButton(btn));
+                    result.push(React.createElement("div", { className: "separator", key: result.length }));
+                result.push(this.renderButton(btn, result.length));
             }
             var key = 0;
             return React.createElement(React.Fragment, null, result.map(function (x) { x.key = ++key; return x; }));
         };
-        Toolbar.prototype.renderButton = function (btn) {
+        Toolbar.prototype.renderButton = function (btn, key) {
             var _this = this;
-            return (React.createElement("div", { className: this.buttonClass(btn), title: btn.hint, onClick: function (e) { return _this.buttonClick(e, btn); } },
+            return (React.createElement("div", { className: this.buttonClass(btn), title: btn.hint, onClick: function (e) { return _this.buttonClick(e, btn); }, key: key },
                 React.createElement("div", { className: "button-outer" }, this.renderButtonText(btn))));
         };
         Toolbar.prototype.renderButtonText = function (btn) {
@@ -10846,7 +10846,7 @@ var Serenity;
         };
         TemplatedDialog.prototype.onDialogOpen = function () {
             if (!$(document.body).hasClass('mobile-device'))
-                $(':input:eq(0)', this.element).focus();
+                $(':input', this.element).not('button').eq(0).focus();
             this.arrange();
             this.tabs && this.tabs.tabs('option', 'active', 0);
         };
