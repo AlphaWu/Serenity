@@ -2298,6 +2298,55 @@ var Q;
         });
     })(Router = Q.Router || (Q.Router = {}));
 })(Q || (Q = {}));
+var Q;
+(function (Q) {
+    function extend(obj, props) {
+        for (var i in props)
+            obj[i] = props[i];
+        return obj;
+    }
+    Q.extend = extend;
+    var uniqueId = 0;
+    function withUniqueID(action) {
+        var prefix = "uid_" + uniqueId + "_";
+        return action(function (s) {
+            return prefix + s;
+        });
+    }
+    Q.withUniqueID = withUniqueID;
+    var hasOwn = {}.hasOwnProperty;
+    function cssClass() {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        var classes = [];
+        for (var i = 0; i < arguments.length; i++) {
+            var arg = arguments[i];
+            if (!arg)
+                continue;
+            var argType = typeof arg;
+            if (argType === 'string' || argType === 'number') {
+                classes.push(arg);
+            }
+            else if (Array.isArray(arg) && arg.length) {
+                var inner = cssClass.apply(null, arg);
+                if (inner) {
+                    classes.push(inner);
+                }
+            }
+            else if (argType === 'object') {
+                for (var key in arg) {
+                    if (hasOwn.call(arg, key) && arg[key]) {
+                        classes.push(key);
+                    }
+                }
+            }
+        }
+        return classes.join(' ');
+    }
+    Q.cssClass = cssClass;
+})(Q || (Q = {}));
 var Serenity;
 (function (Serenity) {
     var Decorators;
@@ -10382,6 +10431,130 @@ var Serenity;
 })(Serenity || (Serenity = {}));
 var Serenity;
 (function (Serenity) {
+    var Toolbar = /** @class */ (function (_super) {
+        __extends(Toolbar, _super);
+        function Toolbar(div, options) {
+            var _this = _super.call(this, div, options) || this;
+            div.addClass("s-Toolbar clearfix");
+            ReactDOM.render(_this.render(options), div[0]);
+            _this.setupMouseTrap();
+            return _this;
+        }
+        Toolbar_1 = Toolbar;
+        Toolbar.prototype.destroy = function () {
+            this.element.find(Toolbar_1.buttonSelector).unbind('click');
+            if (this.mouseTrap) {
+                if (!!this.mouseTrap.destroy) {
+                    this.mouseTrap.destroy();
+                }
+                else {
+                    this.mouseTrap.reset();
+                }
+                this.mouseTrap = null;
+            }
+            _super.prototype.destroy.call(this);
+        };
+        Toolbar.prototype.setupMouseTrap = function () {
+            var _this = this;
+            if (!window['Mousetrap'])
+                return;
+            var buttons;
+            for (var _i = 0, _a = this.options.buttons || []; _i < _a.length; _i++) {
+                var b = _a[_i];
+                if (Q.isEmptyOrNull(b.hotkey))
+                    continue;
+                this.mouseTrap = this.mouseTrap || window['Mousetrap'](this.options.hotkeyContext || window.document.documentElement);
+                (function (x) {
+                    var btn = (buttons = buttons || _this.element.find(Toolbar_1.buttonSelector))
+                        .filter("." + x.cssClass);
+                    _this.mouseTrap.bind(x.hotkey, function (e, action) {
+                        if (btn.is(':visible')) {
+                            btn.triggerHandler('click');
+                        }
+                        return x.hotkeyAllowDefault;
+                    });
+                })(b);
+            }
+        };
+        Toolbar.prototype.adjustIconClass = function (icon) {
+            if (!icon)
+                return icon;
+            if (Q.startsWith(icon, 'fa-'))
+                return 'fa ' + icon;
+            if (Q.startsWith(icon, 'glyphicon-'))
+                return 'glyphicon ' + icon;
+            return icon;
+        };
+        Toolbar.prototype.buttonClass = function (btn) {
+            return Q.cssClass((_a = {
+                    "tool-button": true,
+                    "icon-tool-button": !!btn.icon,
+                    "no-text": !btn.title,
+                    disabled: btn.disabled
+                },
+                _a[btn.cssClass] = !!btn.cssClass,
+                _a));
+            var _a;
+        };
+        Toolbar.prototype.buttonClick = function (e, btn) {
+            if (!btn.onClick || $(e.currentTarget).hasClass('disabled'))
+                return;
+            btn.onClick(e);
+        };
+        Toolbar.prototype.findButton = function (className) {
+            if (className != null && Q.startsWith(className, '.')) {
+                className = className.substr(1);
+            }
+            return $(Toolbar_1.buttonSelector + '.' + className, this.element);
+        };
+        Toolbar.prototype.render = function (props) {
+            return (React.createElement("div", { className: "tool-buttons" },
+                React.createElement("div", { className: "buttons-outer" },
+                    React.createElement("div", { className: "buttons-inner" },
+                        this.renderButtons(props.buttons),
+                        props.children))));
+        };
+        Toolbar.prototype.renderButtons = function (buttons) {
+            var result = [];
+            for (var _i = 0, buttons_1 = buttons; _i < buttons_1.length; _i++) {
+                var btn = buttons_1[_i];
+                if (btn.separator)
+                    result.push(React.createElement("div", { className: "separator" }));
+                result.push(this.renderButton(btn));
+            }
+            var key = 0;
+            return React.createElement(React.Fragment, null, result.map(function (x) { x.key = ++key; return x; }));
+        };
+        Toolbar.prototype.renderButton = function (btn) {
+            var _this = this;
+            return (React.createElement("div", { className: this.buttonClass(btn), title: btn.hint, onClick: function (e) { return _this.buttonClick(e, btn); } },
+                React.createElement("div", { className: "button-outer" }, this.renderButtonText(btn))));
+        };
+        Toolbar.prototype.renderButtonText = function (btn) {
+            var klass = this.adjustIconClass(btn.icon);
+            if (!klass && !btn.title)
+                return React.createElement("span", { className: "button-inner" });
+            if (!btn.htmlEncode) {
+                var h = (klass ? '<i class="' + Q.attrEncode(klass) + '"></i> ' : '') + btn.title;
+                return (React.createElement("span", { className: "button-inner", dangerouslySetInnerHTML: { __html: h } }));
+            }
+            if (!klass)
+                return React.createElement("span", { className: "button-inner" }, btn.title);
+            return React.createElement("span", { className: "button-inner" },
+                React.createElement("i", { className: klass }),
+                btn.title);
+        };
+        Toolbar.buttonSelector = "div.tool-button";
+        Toolbar = Toolbar_1 = __decorate([
+            Serenity.Decorators.registerClass('Serenity.Toolbar')
+        ], Toolbar);
+        return Toolbar;
+        var Toolbar_1;
+    }(Serenity.Widget));
+    Serenity.Toolbar = Toolbar;
+})(Serenity || (Serenity = {}));
+var Serenity;
+(function (Serenity) {
     var PopupMenuButton = /** @class */ (function (_super) {
         __extends(PopupMenuButton, _super);
         function PopupMenuButton(div, opt) {
@@ -10435,96 +10608,6 @@ var Serenity;
         return PopupToolButton;
     }(PopupMenuButton));
     Serenity.PopupToolButton = PopupToolButton;
-    var Toolbar = /** @class */ (function (_super) {
-        __extends(Toolbar, _super);
-        function Toolbar(div, options) {
-            var _this = _super.call(this, div, options) || this;
-            _this.element.addClass('s-Toolbar clearfix')
-                .html('<div class="tool-buttons"><div class="buttons-outer">' +
-                '<div class="buttons-inner"></div></div></div>');
-            var container = $('div.buttons-inner', _this.element);
-            var buttons = _this.options.buttons;
-            for (var i = 0; i < buttons.length; i++) {
-                _this.createButton(container, buttons[i]);
-            }
-            return _this;
-        }
-        Toolbar.prototype.destroy = function () {
-            this.element.find('div.tool-button').unbind('click');
-            if (this.mouseTrap) {
-                if (!!this.mouseTrap.destroy) {
-                    this.mouseTrap.destroy();
-                }
-                else {
-                    this.mouseTrap.reset();
-                }
-                this.mouseTrap = null;
-            }
-            _super.prototype.destroy.call(this);
-        };
-        Toolbar.prototype.createButton = function (container, b) {
-            var cssClass = Q.coalesce(b.cssClass, '');
-            if (b.separator === true) {
-                $('<div class="separator"></div>').appendTo(container);
-            }
-            var btn = $('<div class="tool-button"><div class="button-outer">' +
-                '<span class="button-inner"></span></div></div>')
-                .appendTo(container);
-            if (cssClass.length > 0) {
-                btn.addClass(cssClass);
-            }
-            if (!Q.isEmptyOrNull(b.hint)) {
-                btn.attr('title', b.hint);
-            }
-            btn.click(function (e) {
-                if (btn.hasClass('disabled')) {
-                    return;
-                }
-                b.onClick(e);
-            });
-            var text = b.title;
-            if (b.htmlEncode !== false) {
-                text = Q.htmlEncode(b.title);
-            }
-            if (!Q.isEmptyOrNull(b.icon)) {
-                btn.addClass('icon-tool-button');
-                var klass = b.icon;
-                if (Q.startsWith(klass, 'fa-')) {
-                    klass = 'fa ' + klass;
-                }
-                else if (Q.startsWith(klass, 'glyphicon-')) {
-                    klass = 'glyphicon ' + klass;
-                }
-                text = "<i class='" + klass + "'></i> " + text;
-            }
-            if (text == null || text.length === 0) {
-                btn.addClass('no-text');
-            }
-            else {
-                btn.find('span').html(text);
-            }
-            if (!!(!Q.isEmptyOrNull(b.hotkey) && window['Mousetrap'] != null)) {
-                this.mouseTrap = this.mouseTrap || window['Mousetrap'](this.options.hotkeyContext || window.document.documentElement);
-                this.mouseTrap.bind(b.hotkey, function (e1, action) {
-                    if (btn.is(':visible')) {
-                        btn.triggerHandler('click');
-                    }
-                    return b.hotkeyAllowDefault;
-                });
-            }
-        };
-        Toolbar.prototype.findButton = function (className) {
-            if (className != null && Q.startsWith(className, '.')) {
-                className = className.substr(1);
-            }
-            return $('div.tool-button.' + className, this.element);
-        };
-        Toolbar = __decorate([
-            Serenity.Decorators.registerClass('Serenity.Toolbar')
-        ], Toolbar);
-        return Toolbar;
-    }(Serenity.Widget));
-    Serenity.Toolbar = Toolbar;
 })(Serenity || (Serenity = {}));
 var Serenity;
 (function (Serenity) {
