@@ -15,6 +15,26 @@ var __extends = (this && this.__extends) || function (d, b) {
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
+var __assign = Object.assign || function (t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s)
+            if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+    }
+    return t;
+};
+var __rest = function (s, e) {
+    var t = {};
+    for (var p in s)
+        if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+            t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++)
+            if (e.indexOf(p[i]) < 0)
+                t[p[i]] = s[p[i]];
+    return t;
+};
 /**
  * Represents the completion of an asynchronous operation
  */
@@ -778,10 +798,22 @@ var Q;
         return t;
     }
     Q.text = text;
+    function dbText(prefix) {
+        return function (key) {
+            return text("Db." + prefix + "." + key);
+        };
+    }
+    Q.dbText = dbText;
     function tryGetText(key) {
         return LT.$table[key];
     }
     Q.tryGetText = tryGetText;
+    function dbTryText(prefix) {
+        return function (key) {
+            return text("Db." + prefix + "." + key);
+        };
+    }
+    Q.dbTryText = dbTryText;
     var LT = /** @class */ (function () {
         function LT(key) {
             this.key = key;
@@ -2307,8 +2339,15 @@ var Q;
     }
     Q.extend = extend;
     var uniqueId = 0;
+    function uniqueID() {
+        var prefix = "uid_" + (++uniqueId) + "_";
+        return function (id) {
+            return prefix + id;
+        };
+    }
+    Q.uniqueID = uniqueID;
     function withUniqueID(action) {
-        var prefix = "uid_" + uniqueId + "_";
+        var prefix = "uid_" + (++uniqueId) + "_";
         return action(function (s) {
             return prefix + s;
         });
@@ -2346,6 +2385,54 @@ var Q;
         return classes.join(' ');
     }
     Q.cssClass = cssClass;
+    var WidgetComponent = /** @class */ (function (_super) {
+        __extends(WidgetComponent, _super);
+        function WidgetComponent(widgetType, tag, attrs, props) {
+            var _this = _super.call(this, props) || this;
+            _this.widgetType = widgetType;
+            _this.tag = tag;
+            _this.attrs = Q.extend(attrs, { ref: (function (el) { return _this.node = el; }) });
+            return _this;
+        }
+        WidgetComponent.prototype.render = function () {
+            return React.createElement(this.tag, this.attrs);
+        };
+        WidgetComponent.prototype.componentDidMount = function () {
+            var node = this.node;
+            var $node = $(node);
+            var props = this.props;
+            if (props.id != null) {
+                if (typeof props.id === "function") {
+                    if (props.name)
+                        node.id = props.id(props.name);
+                }
+                else
+                    node.id = props.id;
+            }
+            if (props.name != null)
+                node.name = props.name;
+            if ($node.is(':input'))
+                $node.addClass("editor");
+            if (props.class != null)
+                $node.addClass(props.class);
+            this.widget = new this.widgetType($node, props);
+            if (props.maxLength != null)
+                node.setAttribute("maxLength", props.maxLength.toString());
+            if (props.required)
+                Serenity.EditorUtils.setRequired(this.widget, true);
+            if (props.readOnly)
+                Serenity.EditorUtils.setReadOnly(this.widget, true);
+        };
+        WidgetComponent.prototype.componentWillUnmount = function () {
+            this.widget && this.widget.destroy();
+            this.widget = null;
+        };
+        WidgetComponent.prototype.shouldComponentUpdate = function () {
+            return false;
+        };
+        return WidgetComponent;
+    }(React.Component));
+    Q.WidgetComponent = WidgetComponent;
 })(Q || (Q = {}));
 var Serenity;
 (function (Serenity) {
@@ -5863,6 +5950,14 @@ var Serenity;
         return LookupEditor;
     }(LookupEditorBase));
     Serenity.LookupEditor = LookupEditor;
+    var RLookupEditor = /** @class */ (function (_super) {
+        __extends(RLookupEditor, _super);
+        function RLookupEditor(props) {
+            return _super.call(this, LookupEditor, "input", { type: "hidden" }, props) || this;
+        }
+        return RLookupEditor;
+    }(Q.WidgetComponent));
+    Serenity.RLookupEditor = RLookupEditor;
 })(Serenity || (Serenity = {}));
 var Serenity;
 (function (Serenity) {

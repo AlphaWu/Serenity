@@ -1,11 +1,13 @@
 ﻿/// <reference types="toastr" />
 /// <reference types="jquery" />
-/// <reference types="jquery.validation" />
 /// <reference types="react" />
+/// <reference types="jquery.validation" />
 /// <reference types="jqueryui" />
 declare var Reflect: any;
 declare var __decorate: any;
 declare var __extends: any;
+declare var __assign: any;
+declare var __rest: (s: any, e: any) => {};
 declare class RSVP<TResult> {
     constructor(constructor: (p1: (p1: any) => void, p2: any) => void);
 }
@@ -514,7 +516,9 @@ declare namespace Q {
 }
 declare namespace Q {
     function text(key: string): string;
+    function dbText(prefix: string): ((key: string) => string);
     function tryGetText(key: string): string;
+    function dbTryText(prefix: string): ((key: string) => string);
     class LT {
         private key;
         static $table: {
@@ -766,8 +770,30 @@ declare namespace Q.Router {
 }
 declare namespace Q {
     function extend(obj: any, props: any): any;
+    function uniqueID(): ((id: string) => string);
     function withUniqueID<T>(action: (uid: (id: string) => string) => T): T;
     function cssClass(...args: any[]): string;
+    interface WidgetComponentProps<W extends Serenity.Widget<any>> {
+        id?: string | ((name: string) => string);
+        name?: string;
+        class?: string;
+        maxLength?: number;
+        required?: boolean;
+        readOnly?: boolean;
+        ref?: (el: W) => void;
+    }
+    abstract class WidgetComponent<TWidget extends Serenity.Widget<any>, P> extends React.Component<P & WidgetComponentProps<TWidget>> {
+        private widget;
+        private widgetType;
+        private tag;
+        private attrs;
+        private node;
+        constructor(widgetType: (new (element: JQuery, options?: P) => TWidget), tag: string, attrs: any, props: P);
+        render(): React.DOMElement<any, Element>;
+        componentDidMount(): void;
+        componentWillUnmount(): void;
+        shouldComponentUpdate(): boolean;
+    }
 }
 declare namespace Serenity {
     namespace Decorators {
@@ -1445,6 +1471,9 @@ declare namespace Serenity {
     }
     class LookupEditor extends LookupEditorBase<LookupEditorOptions, any> {
         constructor(hidden: JQuery, opt?: LookupEditorOptions);
+    }
+    class RLookupEditor extends Q.WidgetComponent<LookupEditor, LookupEditorOptions> {
+        constructor(props: LookupEditorOptions);
     }
 }
 declare namespace Serenity {

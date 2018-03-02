@@ -8,8 +8,15 @@ namespace Q {
 
     var uniqueId = 0;
 
+    export function uniqueID(): ((id: string) => string) {
+        var prefix = "uid_" + (++uniqueId) + "_";
+        return function (id) {
+            return prefix + id;
+        }
+    }
+
     export function withUniqueID<T>(action: (uid: (id: string) => string) => T): T {
-        var prefix = "uid_" + uniqueId + "_";
+        var prefix = "uid_" + (++uniqueId) + "_";
         return action(function (s) {
             return prefix + s;
         });
@@ -43,5 +50,79 @@ namespace Q {
         }
 
         return classes.join(' ');
+    }
+
+    export interface WidgetComponentProps<W extends Serenity.Widget<any>> {
+        id?: string | ((name: string) => string);
+        name?: string;
+        class?: string;
+        maxLength?: number;
+        required?: boolean;
+        readOnly?: boolean;
+        ref?: (el: W) => void;
+    }
+
+    export abstract class WidgetComponent<TWidget extends Serenity.Widget<any>, P> extends React.Component<P & WidgetComponentProps<TWidget>> {
+
+        private widget: TWidget;
+        private widgetType: (new (element: JQuery, options?: P) => TWidget);
+        private tag: string;
+        private attrs: any;
+        private node: Element;
+
+        constructor(widgetType: (new (element: JQuery, options?: P) => TWidget), tag: string, attrs: any, props: P) {
+            super(props);
+            this.widgetType = widgetType;
+            this.tag = tag;
+            this.attrs = Q.extend(attrs, { ref: ((el: Element) => this.node = el) });
+        }
+
+        render() {
+            return React.createElement(this.tag, this.attrs);
+        }
+
+        componentDidMount() {
+            var node = this.node;
+            var $node = $(node);
+            var props = this.props;
+
+            if (props.id != null) {
+                if (typeof props.id === "function") {
+                    if (props.name)
+                        node.id = (props.id as any)(props.name as string);
+                }
+                else
+                    node.id = props.id as string;
+            }
+
+            if (props.name != null)
+                (node as any).name = props.name;
+
+            if ($node.is(':input'))
+                $node.addClass("editor");
+
+            if (props.class != null)
+                $node.addClass(props.class);
+
+            this.widget = new (this.widgetType as any)($node, props);
+
+            if (props.maxLength != null)
+                node.setAttribute("maxLength", props.maxLength.toString());
+
+            if (props.required)
+                Serenity.EditorUtils.setRequired(this.widget, true);
+
+            if (props.readOnly)
+                Serenity.EditorUtils.setReadOnly(this.widget, true);
+        }
+
+        componentWillUnmount() {
+            this.widget && this.widget.destroy();
+            this.widget = null;
+        }
+
+        shouldComponentUpdate() {
+            return false;
+        }
     }
 }
