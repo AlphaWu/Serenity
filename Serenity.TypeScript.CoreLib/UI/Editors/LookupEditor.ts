@@ -427,10 +427,4 @@
             super(hidden, opt);
         }
     }
-
-    export class RLookupEditor extends Q.WidgetComponent<LookupEditor, LookupEditorOptions> {
-        constructor(props: LookupEditorOptions) {
-            super(LookupEditor, "input", { type: "hidden" }, props);
-        }
-    }
 }

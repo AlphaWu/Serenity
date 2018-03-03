@@ -52,77 +52,83 @@ namespace Q {
         return classes.join(' ');
     }
 
-    export interface WidgetComponentProps<W extends Serenity.Widget<any>> {
-        id?: string | ((name: string) => string);
-        name?: string;
-        class?: string;
-        maxLength?: number;
-        required?: boolean;
-        readOnly?: boolean;
-        ref?: (el: W) => void;
-    }
+    function widgetComponentFactory(widgetType: any) {
 
-    export abstract class WidgetComponent<TWidget extends Serenity.Widget<any>, P> extends React.Component<P & WidgetComponentProps<TWidget>> {
+        return (function (_super) {
+            __extends(Wrapper, _super);
 
-        private widget: TWidget;
-        private widgetType: (new (element: JQuery, options?: P) => TWidget);
-        private tag: string;
-        private attrs: any;
-        private node: Element;
-
-        constructor(widgetType: (new (element: JQuery, options?: P) => TWidget), tag: string, attrs: any, props: P) {
-            super(props);
-            this.widgetType = widgetType;
-            this.tag = tag;
-            this.attrs = Q.extend(attrs, { ref: ((el: Element) => this.node = el) });
-        }
-
-        render() {
-            return React.createElement(this.tag, this.attrs);
-        }
-
-        componentDidMount() {
-            var node = this.node;
-            var $node = $(node);
-            var props = this.props;
-
-            if (props.id != null) {
-                if (typeof props.id === "function") {
-                    if (props.name)
-                        node.id = (props.id as any)(props.name as string);
-                }
-                else
-                    node.id = props.id as string;
+            function Wrapper() {
+                return _super !== null && _super.apply(this, arguments) || this;
             }
 
-            if (props.name != null)
-                (node as any).name = props.name;
+            Wrapper.prototype.render = function () {
+                return React.createElement("div", {
+                    ref: ((el: any) => this.el = el),
+                });
+            };
 
-            if ($node.is(':input'))
-                $node.addClass("editor");
+            Wrapper.prototype.componentDidMount = function () {
 
-            if (props.class != null)
-                $node.addClass(props.class);
+                var $node = Serenity.Widget.elementFor(widgetType).appendTo(this.el);
+                var node = $node[0];
+                
+                var props = this.props;
 
-            this.widget = new (this.widgetType as any)($node, props);
+                if (props.id != null) {
+                    if (typeof props.id === "function") {
+                        if (props.name)
+                            node.id = (props.id as any)(props.name as string);
+                    }
+                    else
+                        node.id = props.id as string;
+                }
 
-            if (props.maxLength != null)
-                node.setAttribute("maxLength", props.maxLength.toString());
+                if (props.name != null)
+                    (node as any).name = props.name;
 
-            if (props.required)
-                Serenity.EditorUtils.setRequired(this.widget, true);
+                if ($node.is(':input'))
+                    $node.addClass("editor");
 
-            if (props.readOnly)
-                Serenity.EditorUtils.setReadOnly(this.widget, true);
-        }
+                if (props.class != null)
+                    $node.addClass(props.class);
 
-        componentWillUnmount() {
-            this.widget && this.widget.destroy();
-            this.widget = null;
-        }
+                this.widget = new (widgetType as any)($node, props);
 
-        shouldComponentUpdate() {
-            return false;
-        }
+                if (props.maxLength != null)
+                    node.setAttribute("maxLength", props.maxLength.toString());
+
+                if (props.required)
+                    Serenity.EditorUtils.setRequired(this.widget, true);
+
+                if (props.readOnly)
+                    Serenity.EditorUtils.setReadOnly(this.widget, true);
+            }
+
+            Wrapper.prototype.componentWillUnmount = function () {
+                this.widget && this.widget.destroy();
+                this.widget = null;
+            };
+
+            Wrapper.prototype.shouldComponentUpdate = function () {
+                return false;
+            };
+
+            (Wrapper as any).displayName = "Wrapped<" + (ss as any).getTypeFullName(widgetType) + ">";
+
+            return Wrapper;
+        }(React.Component));
     }
+
+    var reactCreateElement = React.createElement;
+    (React as any).createElement = function () {
+        var arg = arguments[0];
+        if (typeof arg === "function" && arg.__isWidgetType === true) {
+            if (arg.__componentFactory === undefined)
+                arguments[0] = arg.__componentFactory = widgetComponentFactory(arg);
+            else
+                arguments[0] = arg.__componentFactory;
+        }
+
+        return reactCreateElement.apply(this, arguments);
+    };
 }

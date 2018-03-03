@@ -4,8 +4,18 @@
     export class IAsyncInit {
     }
 
+    export interface WidgetComponentProps<W extends Serenity.Widget<any>> {
+        id?: string | ((name: string) => string);
+        name?: string;
+        class?: string;
+        maxLength?: number;
+        required?: boolean;
+        readOnly?: boolean;
+        ref?: (el: W) => void;
+    }
+
     @Serenity.Decorators.registerClass()
-    export class Widget<TOptions> {
+    export class Widget<TOptions> extends React.Component<TOptions, any> {
         private static nextWidgetNumber = 0;
         public element: JQuery;
         protected options: TOptions;
@@ -14,6 +24,8 @@
         protected asyncPromise: PromiseLike<void>;
 
         constructor(element: JQuery, options?: TOptions) {
+            super(options);
+
             this.element = element;
             this.options = options || ({} as TOptions);
 
@@ -131,6 +143,9 @@
 
             return this.asyncPromise;
         }
+
+        private static __isWidgetType = true;
+        props: Readonly<{ children?: React.ReactNode }> & Readonly<TOptions> & WidgetComponentProps<this>;
     }
 
     export declare interface Widget<TOptions> {

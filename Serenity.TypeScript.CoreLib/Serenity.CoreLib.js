@@ -2385,54 +2385,66 @@ var Q;
         return classes.join(' ');
     }
     Q.cssClass = cssClass;
-    var WidgetComponent = /** @class */ (function (_super) {
-        __extends(WidgetComponent, _super);
-        function WidgetComponent(widgetType, tag, attrs, props) {
-            var _this = _super.call(this, props) || this;
-            _this.widgetType = widgetType;
-            _this.tag = tag;
-            _this.attrs = Q.extend(attrs, { ref: (function (el) { return _this.node = el; }) });
-            return _this;
-        }
-        WidgetComponent.prototype.render = function () {
-            return React.createElement(this.tag, this.attrs);
-        };
-        WidgetComponent.prototype.componentDidMount = function () {
-            var node = this.node;
-            var $node = $(node);
-            var props = this.props;
-            if (props.id != null) {
-                if (typeof props.id === "function") {
-                    if (props.name)
-                        node.id = props.id(props.name);
-                }
-                else
-                    node.id = props.id;
+    function widgetComponentFactory(widgetType) {
+        return (function (_super) {
+            __extends(Wrapper, _super);
+            function Wrapper() {
+                return _super !== null && _super.apply(this, arguments) || this;
             }
-            if (props.name != null)
-                node.name = props.name;
-            if ($node.is(':input'))
-                $node.addClass("editor");
-            if (props.class != null)
-                $node.addClass(props.class);
-            this.widget = new this.widgetType($node, props);
-            if (props.maxLength != null)
-                node.setAttribute("maxLength", props.maxLength.toString());
-            if (props.required)
-                Serenity.EditorUtils.setRequired(this.widget, true);
-            if (props.readOnly)
-                Serenity.EditorUtils.setReadOnly(this.widget, true);
-        };
-        WidgetComponent.prototype.componentWillUnmount = function () {
-            this.widget && this.widget.destroy();
-            this.widget = null;
-        };
-        WidgetComponent.prototype.shouldComponentUpdate = function () {
-            return false;
-        };
-        return WidgetComponent;
-    }(React.Component));
-    Q.WidgetComponent = WidgetComponent;
+            Wrapper.prototype.render = function () {
+                var _this = this;
+                return React.createElement("div", {
+                    ref: (function (el) { return _this.el = el; }),
+                });
+            };
+            Wrapper.prototype.componentDidMount = function () {
+                var $node = Serenity.Widget.elementFor(widgetType).appendTo(this.el);
+                var node = $node[0];
+                var props = this.props;
+                if (props.id != null) {
+                    if (typeof props.id === "function") {
+                        if (props.name)
+                            node.id = props.id(props.name);
+                    }
+                    else
+                        node.id = props.id;
+                }
+                if (props.name != null)
+                    node.name = props.name;
+                if ($node.is(':input'))
+                    $node.addClass("editor");
+                if (props.class != null)
+                    $node.addClass(props.class);
+                this.widget = new widgetType($node, props);
+                if (props.maxLength != null)
+                    node.setAttribute("maxLength", props.maxLength.toString());
+                if (props.required)
+                    Serenity.EditorUtils.setRequired(this.widget, true);
+                if (props.readOnly)
+                    Serenity.EditorUtils.setReadOnly(this.widget, true);
+            };
+            Wrapper.prototype.componentWillUnmount = function () {
+                this.widget && this.widget.destroy();
+                this.widget = null;
+            };
+            Wrapper.prototype.shouldComponentUpdate = function () {
+                return false;
+            };
+            Wrapper.displayName = "Wrapped<" + ss.getTypeFullName(widgetType) + ">";
+            return Wrapper;
+        }(React.Component));
+    }
+    var reactCreateElement = React.createElement;
+    React.createElement = function () {
+        var arg = arguments[0];
+        if (typeof arg === "function" && arg.__isWidgetType === true) {
+            if (arg.__componentFactory === undefined)
+                arguments[0] = arg.__componentFactory = widgetComponentFactory(arg);
+            else
+                arguments[0] = arg.__componentFactory;
+        }
+        return reactCreateElement.apply(this, arguments);
+    };
 })(Q || (Q = {}));
 var Serenity;
 (function (Serenity) {
@@ -4212,30 +4224,32 @@ var Serenity;
         return IAsyncInit;
     }());
     Serenity.IAsyncInit = IAsyncInit;
-    var Widget = /** @class */ (function () {
+    var Widget = /** @class */ (function (_super) {
+        __extends(Widget, _super);
         function Widget(element, options) {
-            var _this = this;
-            this.element = element;
-            this.options = options || {};
-            this.widgetName = Widget_1.getWidgetName(ss.getInstanceType(this));
-            this.uniqueName = this.widgetName + (Widget_1.nextWidgetNumber++).toString();
-            if (element.data(this.widgetName)) {
-                throw new ss.Exception(Q.format("The element already has widget '{0}'!", this.widgetName));
+            var _this = _super.call(this, options) || this;
+            _this.element = element;
+            _this.options = options || {};
+            _this.widgetName = Widget_1.getWidgetName(ss.getInstanceType(_this));
+            _this.uniqueName = _this.widgetName + (Widget_1.nextWidgetNumber++).toString();
+            if (element.data(_this.widgetName)) {
+                throw new ss.Exception(Q.format("The element already has widget '{0}'!", _this.widgetName));
             }
-            element.bind('remove.' + this.widgetName, function (e) {
+            element.bind('remove.' + _this.widgetName, function (e) {
                 if (e.bubbles || e.cancelable) {
                     return;
                 }
                 _this.destroy();
-            }).data(this.widgetName, this);
-            this.addCssClass();
-            if (this.isAsyncWidget()) {
+            }).data(_this.widgetName, _this);
+            _this.addCssClass();
+            if (_this.isAsyncWidget()) {
                 window.setTimeout(function () {
                     if (element && !_this.asyncPromise) {
                         _this.asyncPromise = _this.initializeAsync();
                     }
                 }, 0);
             }
+            return _this;
         }
         Widget_1 = Widget;
         Widget.prototype.destroy = function () {
@@ -4315,12 +4329,13 @@ var Serenity;
             return this.asyncPromise;
         };
         Widget.nextWidgetNumber = 0;
+        Widget.__isWidgetType = true;
         Widget = Widget_1 = __decorate([
             Serenity.Decorators.registerClass()
         ], Widget);
         return Widget;
         var Widget_1;
-    }());
+    }(React.Component));
     Serenity.Widget = Widget;
     Widget.prototype.addValidationRule = function (eventClass, rule) {
         return Serenity.VX.addValidationRule(this.element, eventClass, rule);
@@ -5950,14 +5965,6 @@ var Serenity;
         return LookupEditor;
     }(LookupEditorBase));
     Serenity.LookupEditor = LookupEditor;
-    var RLookupEditor = /** @class */ (function (_super) {
-        __extends(RLookupEditor, _super);
-        function RLookupEditor(props) {
-            return _super.call(this, LookupEditor, "input", { type: "hidden" }, props) || this;
-        }
-        return RLookupEditor;
-    }(Q.WidgetComponent));
-    Serenity.RLookupEditor = RLookupEditor;
 })(Serenity || (Serenity = {}));
 var Serenity;
 (function (Serenity) {
@@ -10531,7 +10538,7 @@ var Serenity;
         function Toolbar(div, options) {
             var _this = _super.call(this, div, options) || this;
             div.addClass("s-Toolbar clearfix");
-            ReactDOM.render(_this.render(options), div[0]);
+            ReactDOM.render(_this.render(), div[0]);
             _this.setupMouseTrap();
             return _this;
         }
@@ -10602,12 +10609,12 @@ var Serenity;
             }
             return $(Toolbar_1.buttonSelector + '.' + className, this.element);
         };
-        Toolbar.prototype.render = function (props) {
+        Toolbar.prototype.render = function () {
             return (React.createElement("div", { className: "tool-buttons" },
                 React.createElement("div", { className: "buttons-outer" },
                     React.createElement("div", { className: "buttons-inner" },
-                        this.renderButtons(props.buttons),
-                        props.children))));
+                        this.renderButtons(this.props.buttons),
+                        this.props.children))));
         };
         Toolbar.prototype.renderButtons = function (buttons) {
             var result = [];

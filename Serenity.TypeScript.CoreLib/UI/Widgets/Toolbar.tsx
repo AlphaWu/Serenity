@@ -24,7 +24,7 @@
         constructor(div: JQuery, options: ToolbarOptions) {
             super(div, options);
             div.addClass("s-Toolbar clearfix");
-            ReactDOM.render(this.render(options), div[0]);
+            ReactDOM.render(this.render(), div[0]);
             this.setupMouseTrap();
         }
 
@@ -114,13 +114,13 @@
             return $(Toolbar.buttonSelector + '.' + className, this.element);
         }
 
-        render(props: Serenity.ToolbarOptions & { children?: React.ReactNode }) {
+        render() {
             return (
                 <div className="tool-buttons">
                     <div className="buttons-outer">
                         <div className="buttons-inner">
-                            {this.renderButtons(props.buttons)}
-                            {props.children}
+                            {this.renderButtons(this.props.buttons)}
+                            {this.props.children}
                         </div>
                     </div>
                 </div>

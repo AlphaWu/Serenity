@@ -773,27 +773,6 @@ declare namespace Q {
     function uniqueID(): ((id: string) => string);
     function withUniqueID<T>(action: (uid: (id: string) => string) => T): T;
     function cssClass(...args: any[]): string;
-    interface WidgetComponentProps<W extends Serenity.Widget<any>> {
-        id?: string | ((name: string) => string);
-        name?: string;
-        class?: string;
-        maxLength?: number;
-        required?: boolean;
-        readOnly?: boolean;
-        ref?: (el: W) => void;
-    }
-    abstract class WidgetComponent<TWidget extends Serenity.Widget<any>, P> extends React.Component<P & WidgetComponentProps<TWidget>> {
-        private widget;
-        private widgetType;
-        private tag;
-        private attrs;
-        private node;
-        constructor(widgetType: (new (element: JQuery, options?: P) => TWidget), tag: string, attrs: any, props: P);
-        render(): React.DOMElement<any, Element>;
-        componentDidMount(): void;
-        componentWillUnmount(): void;
-        shouldComponentUpdate(): boolean;
-    }
 }
 declare namespace Serenity {
     namespace Decorators {
@@ -1120,7 +1099,16 @@ declare namespace Serenity {
 declare namespace Serenity {
     class IAsyncInit {
     }
-    class Widget<TOptions> {
+    interface WidgetComponentProps<W extends Serenity.Widget<any>> {
+        id?: string | ((name: string) => string);
+        name?: string;
+        class?: string;
+        maxLength?: number;
+        required?: boolean;
+        readOnly?: boolean;
+        ref?: (el: W) => void;
+    }
+    class Widget<TOptions> extends React.Component<TOptions, any> {
         private static nextWidgetNumber;
         element: JQuery;
         protected options: TOptions;
@@ -1140,6 +1128,10 @@ declare namespace Serenity {
         static create<TWidget extends Widget<TOpt>, TOpt>(params: CreateWidgetParams<TWidget, TOpt>): TWidget;
         init(action?: (widget: any) => void): this;
         initialize(): PromiseLike<void>;
+        private static __isWidgetType;
+        props: Readonly<{
+            children?: React.ReactNode;
+        }> & Readonly<TOptions> & WidgetComponentProps<this>;
     }
     interface Widget<TOptions> {
         addValidationRule(eventClass: string, rule: (p1: JQuery) => string): JQuery;
@@ -1471,9 +1463,6 @@ declare namespace Serenity {
     }
     class LookupEditor extends LookupEditorBase<LookupEditorOptions, any> {
         constructor(hidden: JQuery, opt?: LookupEditorOptions);
-    }
-    class RLookupEditor extends Q.WidgetComponent<LookupEditor, LookupEditorOptions> {
-        constructor(props: LookupEditorOptions);
     }
 }
 declare namespace Serenity {
@@ -2283,9 +2272,7 @@ declare namespace Serenity {
         buttonClass(btn: ToolButton): string;
         buttonClick(e: React.MouseEvent<any>, btn: ToolButton): void;
         findButton(className: string): JQuery;
-        render(props: Serenity.ToolbarOptions & {
-            children?: React.ReactNode;
-        }): JSX.Element;
+        render(): JSX.Element;
         renderButtons(buttons: ToolButton[]): JSX.Element;
         renderButton(btn: ToolButton, key?: any): JSX.Element;
         renderButtonText(btn: ToolButton): JSX.Element;
