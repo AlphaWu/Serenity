@@ -118,10 +118,7 @@
             return (
                 <div className="tool-buttons">
                     <div className="buttons-outer">
-                        <div className="buttons-inner">
-                            {this.renderButtons(this.props.buttons)}
-                            {this.props.children}
-                        </div>
+                        {this.renderButtons(this.props.buttons)}
                     </div>
                 </div>
             );
@@ -137,7 +134,10 @@
             }
 
             var key = 0;
-            return <>{result.map(x => { x.key = ++key; return x; })}</>;
+            return (<div className="buttons-inner">
+                {result.map(x => { x.key = ++key; return x; })}
+                {this.props.children}
+                </div>);
         }
 
         renderButton(btn: ToolButton, key?: any) {

@@ -8,6 +8,18 @@ namespace Q {
 
     var uniqueId = 0;
 
+    export function uniqueX2(): () => (() => string) {
+        var prefix = "uid_" + (++uniqueId) + "_";
+        return function () {
+            var counter = 0;
+            var flag = false;
+            return function () {
+                flag = !flag;
+                return prefix + (flag ? (++counter) : (counter));
+            }
+        }
+    }
+
     export function uniqueID(): ((id: string) => string) {
         var prefix = "uid_" + (++uniqueId) + "_";
         return function (id) {
@@ -52,6 +64,11 @@ namespace Q {
         return classes.join(' ');
     }
 
+    if (typeof React === "undefined" &&
+        window['preact'] != null) {
+        window['React'] = window['ReactDOM'] = window['preact'];
+    }
+
     function widgetComponentFactory(widgetType: any) {
 
         return (function (_super) {
@@ -64,14 +81,19 @@ namespace Q {
             Wrapper.prototype.render = function () {
                 return React.createElement("div", {
                     ref: ((el: any) => this.el = el),
+                    className: 'widget-wrapper'
                 });
             };
 
             Wrapper.prototype.componentDidMount = function () {
 
-                var $node = Serenity.Widget.elementFor(widgetType).appendTo(this.el);
+                if (this.widget != null)
+                    return;
+
+                var $node = Serenity.Widget.elementFor(widgetType);
                 var node = $node[0];
-                
+                this.el.appendChild(node);
+
                 var props = this.props;
 
                 if (props.id != null) {

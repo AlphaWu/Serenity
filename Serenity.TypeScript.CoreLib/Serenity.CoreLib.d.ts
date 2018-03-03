@@ -770,6 +770,7 @@ declare namespace Q.Router {
 }
 declare namespace Q {
     function extend(obj: any, props: any): any;
+    function uniqueX2(): () => (() => string);
     function uniqueID(): ((id: string) => string);
     function withUniqueID<T>(action: (uid: (id: string) => string) => T): T;
     function cssClass(...args: any[]): string;

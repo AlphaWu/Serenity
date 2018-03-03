@@ -2339,6 +2339,18 @@ var Q;
     }
     Q.extend = extend;
     var uniqueId = 0;
+    function uniqueX2() {
+        var prefix = "uid_" + (++uniqueId) + "_";
+        return function () {
+            var counter = 0;
+            var flag = false;
+            return function () {
+                flag = !flag;
+                return prefix + (flag ? (++counter) : (counter));
+            };
+        };
+    }
+    Q.uniqueX2 = uniqueX2;
     function uniqueID() {
         var prefix = "uid_" + (++uniqueId) + "_";
         return function (id) {
@@ -2385,6 +2397,10 @@ var Q;
         return classes.join(' ');
     }
     Q.cssClass = cssClass;
+    if (typeof React === "undefined" &&
+        window['preact'] != null) {
+        window['React'] = window['ReactDOM'] = window['preact'];
+    }
     function widgetComponentFactory(widgetType) {
         return (function (_super) {
             __extends(Wrapper, _super);
@@ -2395,11 +2411,15 @@ var Q;
                 var _this = this;
                 return React.createElement("div", {
                     ref: (function (el) { return _this.el = el; }),
+                    className: 'widget-wrapper'
                 });
             };
             Wrapper.prototype.componentDidMount = function () {
-                var $node = Serenity.Widget.elementFor(widgetType).appendTo(this.el);
+                if (this.widget != null)
+                    return;
+                var $node = Serenity.Widget.elementFor(widgetType);
                 var node = $node[0];
+                this.el.appendChild(node);
                 var props = this.props;
                 if (props.id != null) {
                     if (typeof props.id === "function") {
@@ -10611,10 +10631,7 @@ var Serenity;
         };
         Toolbar.prototype.render = function () {
             return (React.createElement("div", { className: "tool-buttons" },
-                React.createElement("div", { className: "buttons-outer" },
-                    React.createElement("div", { className: "buttons-inner" },
-                        this.renderButtons(this.props.buttons),
-                        this.props.children))));
+                React.createElement("div", { className: "buttons-outer" }, this.renderButtons(this.props.buttons))));
         };
         Toolbar.prototype.renderButtons = function (buttons) {
             var result = [];
@@ -10625,7 +10642,9 @@ var Serenity;
                 result.push(this.renderButton(btn, result.length));
             }
             var key = 0;
-            return React.createElement(React.Fragment, null, result.map(function (x) { x.key = ++key; return x; }));
+            return (React.createElement("div", { className: "buttons-inner" },
+                result.map(function (x) { x.key = ++key; return x; }),
+                this.props.children));
         };
         Toolbar.prototype.renderButton = function (btn, key) {
             var _this = this;
